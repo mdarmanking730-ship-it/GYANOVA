@@ -1,4 +1,342 @@
-<!doctype html><html lang="hi"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GYANOVA Owner Panel</title><style>body{margin:0;font-family:Arial;background:#07111f;color:#fff}.wrap{max-width:900px;margin:auto;padding:24px}.box{background:#0d1e31;border:1px solid #1b4c70;padding:20px;border-radius:18px;margin:16px 0}input,textarea{width:100%;padding:12px;margin:7px 0 12px;background:#081522;color:#fff;border:1px solid #315878;border-radius:9px}button{background:#1599ed;color:#fff;border:0;border-radius:9px;padding:11px 16px;margin:5px}.danger{background:#d6444d}.stats{display:flex;gap:12px;flex-wrap:wrap}.stat{padding:15px;background:#10283e;border-radius:12px;min-width:120px}</style><div class=wrap><h1>GYANOVA Owner Panel 🔐</h1><div class=box id=login><input id=e placeholder="Owner Email"><input id=p type=password placeholder="Password"><button onclick=login()>Login</button></div><div id=app style=display:none><div class=box><h2>📊 Dashboard</h2><div id=s class=stats></div></div><div class=box><h2>🎬 Add Video</h2><input id=vt placeholder="Title"><input id=vc placeholder="Category"><input id=vu placeholder="YouTube URL"><textarea id=vd placeholder="Description"></textarea><button onclick=addVideo()>Save Video</button></div><div class=box><h2>📢 Add Announcement</h2><input id=at placeholder="Title"><textarea id=ab placeholder="Announcement"></textarea><button onclick=addAnn()>Publish</button></div><div class=box><h2>📝 Add Practice Test</h2><input id=tt placeholder="Test title"><input id=ts placeholder="Subject"><button onclick=addTest()>Create Test</button></div><div class=box><h2>Current Videos</h2><div id=list></div></div></div></div><script>const API="http://localhost:8080";let token="";async function req(path,opt={}){opt.headers={...(opt.headers||{}),Authorization:"Bearer "+token,"Content-Type":"application/json"};return fetch(API+path,opt)}async function login(){let r=await fetch(API+"/api/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:e.value,password:p.value})}),d=await r.json();if(!r.ok)return alert(d.error);token=d.token;document.getElementById('login').style.display='none';document.getElementById('app').style.display='block';load()}async function load(){let st=await(await req('/api/admin/stats')).json();s.innerHTML=Object.entries(st).map(([k,v])=>`<div class=stat><b>${v}</b><br>${k}</div>`).join('');let v=await(await fetch(API+'/api/videos')).json();list.innerHTML=v.map(x=>`<div><b>${x.title}</b> — ${x.category} <button class=danger onclick="del(${x.id})">Delete</button></div>`).join('')}async function addVideo(){let r=await req('/api/admin/videos',{method:'POST',body:JSON.stringify({title:vt.value,category:vc.value,url:vu.value,description:vd.value})}),d=await r.json();if(!r.ok)return alert(d.error);[vt,vc,vu,vd].forEach(x=>x.value='');load()}async function del(id){await req('/api/admin/videos/'+id,{method:'DELETE'});load()}async function addAnn(){let r=await req('/api/admin/announcements',{method:'POST',body:JSON.stringify({title:at.value,body:ab.value})}),d=await r.json();if(!r.ok)return alert(d.error);at.value=ab.value='';alert('Published')}async function addTest(){let r=await req('/api/admin/tests',{method:'POST',body:JSON.stringify({title:tt.value,subject:ts.value,questions:[]})}),d=await r.json();if(!r.ok)return alert(d.error);tt.value=ts.value='';alert('Test created')}</script>
+ <!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>GYANOVA - AI Study Partner</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #070b18;
+      color: white;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 7%;
+      border-bottom: 1px solid #1e293b;
+      position: sticky;
+      top: 0;
+      background: #070b18;
+      z-index: 10;
+    }
+
+    .logo {
+      font-size: 28px;
+      font-weight: bold;
+      color: #38bdf8;
+    }
+
+    .login {
+      background: #38bdf8;
+      color: #06101c;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 80px 7% 60px;
+    }
+
+    .badge {
+      display: inline-block;
+      color: #38bdf8;
+      border: 1px solid #38bdf8;
+      padding: 7px 14px;
+      border-radius: 30px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: clamp(42px, 8vw, 72px);
+      line-height: 1.05;
+      margin-bottom: 20px;
+    }
+
+    .highlight {
+      color: #38bdf8;
+    }
+
+    .hero p {
+      max-width: 700px;
+      margin: auto;
+      color: #cbd5e1;
+      font-size: 18px;
+      line-height: 1.6;
+    }
+
+    .buttons {
+      margin-top: 30px;
+    }
+
+    .primary {
+      background: #38bdf8;
+      color: #06101c;
+      border: none;
+      padding: 14px 24px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      margin: 5px;
+    }
+
+    .secondary {
+      background: transparent;
+      color: white;
+      border: 1px solid #334155;
+      padding: 14px 24px;
+      border-radius: 12px;
+      font-size: 16px;
+      margin: 5px;
+    }
+
+    .features {
+      padding: 30px 7% 80px;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .section-title {
+      text-align: center;
+      margin-bottom: 35px;
+      font-size: 32px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      background: #111827;
+      border: 1px solid #243044;
+      border-radius: 18px;
+      padding: 25px;
+      transition: 0.3s;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      border-color: #38bdf8;
+    }
+
+    .icon {
+      font-size: 32px;
+      margin-bottom: 15px;
+    }
+
+    .card h3 {
+      margin-bottom: 10px;
+    }
+
+    .card p {
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    .cta {
+      text-align: center;
+      margin: 20px 7% 70px;
+      padding: 50px 20px;
+      border-radius: 25px;
+      background: #0f172a;
+      border: 1px solid #26354d;
+    }
+
+    .cta h2 {
+      font-size: 34px;
+      margin-bottom: 15px;
+    }
+
+    .cta p {
+      color: #94a3b8;
+      margin-bottom: 25px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 25px;
+      border-top: 1px solid #1e293b;
+      color: #64748b;
+    }
+
+    @media (max-width: 600px) {
+      header {
+        padding: 15px 5%;
+      }
+
+      .hero {
+        padding-top: 60px;
+      }
+
+      .card {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">GYANOVA</div>
+  <button class="login" onclick="login()">Login</button>
+</header>
+
+<section class="hero">
+
+  <div class="badge">AI STUDY PARTNER</div>
+
+  <h1>
+    सवाल कोई भी हो,<br>
+    <span class="highlight">समझ GYANOVA से।</span>
+  </h1>
+
+  <p>
+    पढ़ाई को आसान बनाने वाला AI Study Partner।
+    Question की photo से solution, Zero से learning,
+    Smart Notes, AI Doubt Chat और Practice Tests —
+    सब एक ही जगह।
+  </p>
+
+  <div class="buttons">
+    <button class="primary" onclick="startLearning()">
+      🚀 Start Learning
+    </button>
+
+    <button class="secondary" onclick="showFeatures()">
+      ✨ Explore Features
+    </button>
+  </div>
+
+</section>
+
+<section class="features" id="features">
+
+  <h2 class="section-title">GYANOVA में क्या मिलेगा?</h2>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="icon">📸</div>
+      <h3>Photo Question → Solution</h3>
+      <p>
+        Question की photo से उसे समझने और step-by-step solution पाने में मदद।
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="icon">🧠</div>
+      <h3>Zero से Learning</h3>
+      <p>
+        अगर कुछ भी नहीं आता, तो बिल्कुल basic level से आसान भाषा में सीखो।
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="icon">📚</div>
+      <h3>PDF → Smart Notes</h3>
+      <p>
+        Notes और PDF से important concepts, formulas और revision points।
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="icon">▶️</div>
+      <h3>YouTube Lecture → Notes</h3>
+      <p>
+        Lecture content को organized study material में बदलने का workflow।
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="icon">💬</div>
+      <h3>AI Doubt Chat</h3>
+      <p>
+        अपने doubts पूछो और आसान Hindi/Hinglish में explanation पाओ।
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="icon">📝</div>
+      <h3>Practice Tests</h3>
+      <p>
+        Easy, Medium और exam-level questions से practice करो।
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="icon">✅</div>
+      <h3>Answer Checking</h3>
+      <p>
+        अपने answer की mistakes समझो और सही तरीका सीखो।
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="icon">📊</div>
+      <h3>Progress & Weak Topics</h3>
+      <p>
+        अपनी preparation और weak topics को track करने की सुविधा।
+      </p>
+    </div>
+
+  </div>
+
+</section>
+
+<section class="cta">
+
+  <h2>One Platform. Complete Study.</h2>
+
+  <p>
+    Hindi • Hinglish • English
+  </p>
+
+  <button class="primary" onclick="startLearning()">
+    🚀 Start Your Learning
+  </button>
+
+</section>
+
+<footer>
+  © 2026 GYANOVA • By Arman
+</footer>
+
+<script>
+
+function startLearning() {
+  alert("GYANOVA Learning जल्द शुरू होगा! 🚀");
+}
+
+function login() {
+  alert("Login system जल्द उपलब्ध होगा।");
+}
+
+function showFeatures() {
+  document.getElementById("features").scrollIntoView({
+    behavior: "smooth"
+  });
+}
+
+</script>
+
+</body>
+</html><!doctype html><html lang="hi"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GYANOVA Owner Panel</title><style>body{margin:0;font-family:Arial;background:#07111f;color:#fff}.wrap{max-width:900px;margin:auto;padding:24px}.box{background:#0d1e31;border:1px solid #1b4c70;padding:20px;border-radius:18px;margin:16px 0}input,textarea{width:100%;padding:12px;margin:7px 0 12px;background:#081522;color:#fff;border:1px solid #315878;border-radius:9px}button{background:#1599ed;color:#fff;border:0;border-radius:9px;padding:11px 16px;margin:5px}.danger{background:#d6444d}.stats{display:flex;gap:12px;flex-wrap:wrap}.stat{padding:15px;background:#10283e;border-radius:12px;min-width:120px}</style><div class=wrap><h1>GYANOVA Owner Panel 🔐</h1><div class=box id=login><input id=e placeholder="Owner Email"><input id=p type=password placeholder="Password"><button onclick=login()>Login</button></div><div id=app style=display:none><div class=box><h2>📊 Dashboard</h2><div id=s class=stats></div></div><div class=box><h2>🎬 Add Video</h2><input id=vt placeholder="Title"><input id=vc placeholder="Category"><input id=vu placeholder="YouTube URL"><textarea id=vd placeholder="Description"></textarea><button onclick=addVideo()>Save Video</button></div><div class=box><h2>📢 Add Announcement</h2><input id=at placeholder="Title"><textarea id=ab placeholder="Announcement"></textarea><button onclick=addAnn()>Publish</button></div><div class=box><h2>📝 Add Practice Test</h2><input id=tt placeholder="Test title"><input id=ts placeholder="Subject"><button onclick=addTest()>Create Test</button></div><div class=box><h2>Current Videos</h2><div id=list></div></div></div></div><script>const API="http://localhost:8080";let token="";async function req(path,opt={}){opt.headers={...(opt.headers||{}),Authorization:"Bearer "+token,"Content-Type":"application/json"};return fetch(API+path,opt)}async function login(){let r=await fetch(API+"/api/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:e.value,password:p.value})}),d=await r.json();if(!r.ok)return alert(d.error);token=d.token;document.getElementById('login').style.display='none';document.getElementById('app').style.display='block';load()}async function load(){let st=await(await req('/api/admin/stats')).json();s.innerHTML=Object.entries(st).map(([k,v])=>`<div class=stat><b>${v}</b><br>${k}</div>`).join('');let v=await(await fetch(API+'/api/videos')).json();list.innerHTML=v.map(x=>`<div><b>${x.title}</b> — ${x.category} <button class=danger onclick="del(${x.id})">Delete</button></div>`).join('')}async function addVideo(){let r=await req('/api/admin/videos',{method:'POST',body:JSON.stringify({title:vt.value,category:vc.value,url:vu.value,description:vd.value})}),d=await r.json();if(!r.ok)return alert(d.error);[vt,vc,vu,vd].forEach(x=>x.value='');load()}async function del(id){await req('/api/admin/videos/'+id,{method:'DELETE'});load()}async function addAnn(){let r=await req('/api/admin/announcements',{method:'POST',body:JSON.stringify({title:at.value,body:ab.value})}),d=await r.json();if(!r.ok)return alert(d.error);at.value=ab.value='';alert('Published')}async function addTest(){let r=await req('/api/admin/tests',{method:'POST',body:JSON.stringify({title:tt.value,subject:ts.value,questions:[]})}),d=await r.json();if(!r.ok)return alert(d.error);tt.value=ts.value='';alert('Test created')}</script>
 <!DOCTYPE html>
 <html lang="hi">
 <head>
