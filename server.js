@@ -1,4 +1,31 @@
-require("dotenv").config();
+const express = require("express");
+const path = require("path");
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// JSON data पढ़ने के लिए
+app.use(express.json());
+
+// Frontend (index.html) serve करना
+app.use(express.static(path.join(__dirname)));
+
+// Homepage
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
+// Health check
+app.get("/api/health", (req, res) => {
+  res.json({
+    success: true,
+    message: "GYANOVA API is running 🚀"
+  });
+});
+
+app.listen(PORT, () => {
+  console.log(`GYANOVA running on port ${PORT}`);
+});require("dotenv").config();
 const express=require("express"),cors=require("cors"),helmet=require("helmet"),rateLimit=require("express-rate-limit"),bcrypt=require("bcryptjs"),jwt=require("jsonwebtoken"),Database=require("better-sqlite3");
 const app=express(),db=new Database("gyanova.sqlite");
 app.use(helmet());app.use(express.json({limit:"2mb"}));app.use(cors({origin:process.env.CORS_ORIGIN||true}));app.use(rateLimit({windowMs:15*60*1000,max:300}));
